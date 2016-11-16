@@ -32,6 +32,10 @@
 
 // Bracket code that shouldn't be interrupted
 #ifndef CRITICAL_SECTION_START
+#ifdef ESP8266
+  #define CRITICAL_SECTION_START  uint32_t savedPS = savedPS = xt_rsil(15);
+  #define CRITICAL_SECTION_END    xt_wsr_ps(savedPS);
+#else
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
   #define CRITICAL_SECTION_END    SREG = _sreg;
 #endif

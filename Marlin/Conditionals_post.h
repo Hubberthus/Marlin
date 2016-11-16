@@ -566,6 +566,10 @@
   #endif
   #define WRITE_FAN_N(n, v) WRITE_FAN##n(v)
 
+#ifdef ESP8266
+  #define FAN_SOFT_PWM
+#endif
+
   /**
    * Servos and probes
    */
