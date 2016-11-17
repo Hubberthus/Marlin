@@ -28,6 +28,7 @@
 #ifndef _FASTIO_ARDUINO_H
 #define _FASTIO_ARDUINO_H
 
+#ifndef ESP8266
 #include <avr/io.h>
 
 /**
@@ -80,6 +81,34 @@
 
 /// check if pin is an timer
 #define _GET_TIMER(IO)  (DIO ## IO ## _PWM)
+
+#else
+
+#include "gpio_expansion.h"
+
+/// Read a pin
+#define _READ(IO) ((bool)(digitalRead(IO))))
+
+/// write to a pin
+#define _WRITE(IO, v)  do { digitalWrite(IO, v); } while (0)
+
+/// toggle a pin
+#define _TOGGLE(IO)  do { digitalWrite(IO, ! digitalRead(IO)); } while (0)
+
+/// set pin as input
+#define _SET_INPUT(IO) do { pinMode(IO, INPUT); } while (0)
+/// set pin as output
+#define _SET_OUTPUT(IO) do { pinMode(IO, OUTPUT); } while (0)
+
+/// check if pin is an input
+#define _GET_INPUT(IO)  ((PORT_DIR[0] & (1 << IO)) != 0)
+/// check if pin is an output
+#define _GET_OUTPUT(IO)  ((PORT_DIR[0] & (1 << IO)) == 0)
+
+/// check if pin is an timer
+#define _GET_TIMER(IO)  (NULL)
+
+#endif
 
 //  why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
 
@@ -4031,8 +4060,10 @@
 
 #endif
 
-#ifndef DIO0_PIN
-  #error "pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please submit a pull request"
+#ifndef ESP8266
+  #ifndef DIO0_PIN
+    #error "pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please submit a pull request"
+  #endif
 #endif
 
 #endif /* _FASTIO_ARDUINO_H */

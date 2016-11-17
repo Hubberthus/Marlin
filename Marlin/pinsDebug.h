@@ -31,12 +31,22 @@ bool endstop_monitor_flag = false;
 #define _ANALOG_PIN_SAY(NAME) { sprintf(buffer, NAME_FORMAT, NAME); SERIAL_ECHO(buffer); pin_is_analog = true; return true; }
 #define ANALOG_PIN_SAY(NAME) if (pin == analogInputToDigitalPin(NAME)) _ANALOG_PIN_SAY(#NAME);
 
+#ifdef ESP8266
+#define IS_ANALOG(P) ((P) == A0 || ((P) >= A1 && (P) <= A8))
+
+int digitalRead_mod(int8_t pin) { // same as digitalRead
+  return digitalRead(pin);
+}
+
+#else
 #define IS_ANALOG(P) ((P) >= analogInputToDigitalPin(0) && ((P) <= analogInputToDigitalPin(15) || (P) <= analogInputToDigitalPin(5)))
 
 int digitalRead_mod(int8_t pin) { // same as digitalRead except the PWM stop section has been removed
   uint8_t port = digitalPinToPort(pin);
   return (port != NOT_A_PIN) && (*portInputRegister(port) & digitalPinToBitMask(pin)) ? HIGH : LOW;
 }
+
+#endif
 
 /**
  * Report pin name for a given fastio digital pin index

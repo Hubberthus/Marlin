@@ -26,7 +26,10 @@
 #include "macros.h"
 #include "language.h"
 #include "stopwatch.h"
+
+#ifndef ESP8266
 #include <avr/eeprom.h>
+#endif
 
 
 // Print debug messages with M111 S2
