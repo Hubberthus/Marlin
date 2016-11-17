@@ -5531,7 +5531,11 @@ inline void gcode_M111() {
     for (uint8_t i = 0; i < COUNT(debug_strings); i++) {
       if (TEST(marlin_debug_flags, i)) {
         if (comma++) SERIAL_CHAR(',');
+#ifndef ESP8266
         serialprintPGM((char*)pgm_read_word(&(debug_strings[i])));
+#else
+        serialprintPGM(debug_strings[i]);
+#endif
       }
     }
   }
