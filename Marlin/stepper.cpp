@@ -249,7 +249,7 @@ volatile long Stepper::endstops_trigsteps[XYZ];
 // Some useful constants
 
 #ifdef ESP8266
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()  do { timer1_enable(TIM_DIV16, TIM_LEVEL, TIM_LOOP); } while(0)
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()  do { timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP); } while(0)
 #define DISABLE_STEPPER_DRIVER_INTERRUPT() do { timer1_disable(); } while(0)
 #else
 #define ENABLE_STEPPER_DRIVER_INTERRUPT()  SBI(TIMSK1, OCIE1A)
