@@ -1747,7 +1747,8 @@ void Temperature::isr() {
   #endif // SLOW_PWM_HEATERS
 
 #ifdef ESP8266
-  #define START_ADC(pin) static uint16_t ADC = analogRead(pin);
+  static uint16_t ADC = 0;
+  #define START_ADC(pin) ADC = analogRead(pin);
 #else
   #define SET_ADMUX_ADCSRA(pin) ADMUX = _BV(REFS0) | (pin & 0x07); SBI(ADCSRA, ADSC)
   #ifdef MUX5
