@@ -23,6 +23,40 @@
 #ifndef MARLIN_CONFIG_H
 #define MARLIN_CONFIG_H
 
+#ifdef ESP8266
+
+#include "EEPROM.h"
+
+inline void eeprom_write_byte(unsigned char* pos, uint8_t value) {
+	EEPROM.write((int)pos, value);
+	EEPROM.commit();
+}
+
+inline uint8_t eeprom_read_byte(unsigned char* pos) {
+	return EEPROM.read((int)pos);
+}
+
+inline void eeprom_read_block(void *data, const void *address, size_t len){
+  int i;
+  uint8_t *tmp = (uint8_t*)data;
+
+  for(i = 0; i < len; i++){
+	tmp[i] = EEPROM.read((int)address + i);
+  }
+}
+
+inline void eeprom_update_block(const void *data, void *address, size_t len) {
+  int i;
+  uint8_t *tmp = (uint8_t*)data;
+
+  for(i = 0; i < len; i++){
+    EEPROM.write((int)address + i, tmp[i]);
+  }
+  EEPROM.commit();
+}
+
+#endif
+
 #include "fastio.h"
 #include "macros.h"
 #include "boards.h"

@@ -24,7 +24,10 @@
 #define WATCHDOG_H
 
 #include "Marlin.h"
+
+#ifndef ESP8266
 #include <avr/wdt.h>
+#endif
 
 // Initialize watchdog with a 4 second interrupt time
 void watchdog_init();

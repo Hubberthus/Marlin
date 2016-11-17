@@ -739,6 +739,7 @@ inline void sync_plan_position_e() { planner.set_e_position_mm(current_position[
 
 #endif
 
+#ifndef ESP8266
 #if ENABLED(SDSUPPORT)
   #include "SdFatUtil.h"
   int freeMemory() { return SdFatUtil::FreeRam(); }
@@ -758,6 +759,11 @@ extern "C" {
   }
 }
 #endif //!SDSUPPORT
+#else
+int freeMemory() {
+  return ESP.getFreeHeap();
+}
+#endif
 
 #if ENABLED(DIGIPOT_I2C)
   extern void digipot_i2c_set_current(int channel, float current);
@@ -9899,7 +9905,9 @@ void setup() {
   SERIAL_ECHO_START;
 
 #ifdef ESP8266
-  #define MCUSR 0
+  byte MCUSR = 0;
+
+  EEPROM.begin(256);
 #endif
 
   // Check startup - does nothing if bootloader sets MCUSR to 0

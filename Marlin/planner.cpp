@@ -85,8 +85,8 @@ float Planner::max_feedrate_mm_s[NUM_AXIS], // Max speeds in mm per second
       Planner::axis_steps_per_mm[NUM_AXIS],
       Planner::steps_to_mm[NUM_AXIS];
 
-uint32_t Planner::max_acceleration_steps_per_s2[NUM_AXIS],
-         Planner::max_acceleration_mm_per_s2[NUM_AXIS]; // Use M201 to override by software
+unsigned long Planner::max_acceleration_steps_per_s2[NUM_AXIS],
+              Planner::max_acceleration_mm_per_s2[NUM_AXIS]; // Use M201 to override by software
 
 millis_t Planner::min_segment_time;
 float Planner::min_feedrate_mm_s,

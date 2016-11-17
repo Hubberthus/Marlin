@@ -186,6 +186,7 @@ volatile long Stepper::endstops_trigsteps[XYZ];
   #define E_APPLY_STEP(v,Q) E_STEP_WRITE(v)
 #endif
 
+#ifndef ESP8266
 // intRes = longIn1 * longIn2 >> 24
 // uses:
 // r26 to store 0
@@ -241,6 +242,9 @@ volatile long Stepper::endstops_trigsteps[XYZ];
                  : \
                  "r26" , "r27" \
                )
+#else
+#define MultiU24X32toH16(intRes, longIn1, longIn2) { intRes = longIn1 * longIn2 >> 24; }
+#endif
 
 // Some useful constants
 

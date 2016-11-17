@@ -34,6 +34,8 @@
 
 #define LARGE_FLASH true
 
+#define USBCON
+
 //
 // Limit Switches
 //
