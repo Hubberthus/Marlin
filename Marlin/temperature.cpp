@@ -1011,6 +1011,7 @@ void Temperature::init() {
 
   #endif //HEATER_0_USES_MAX6675
 
+#ifndef ESP8266
   #ifdef DIDR2
     #define ANALOG_SELECT(pin) do{ if (pin < 8) SBI(DIDR0, pin); else SBI(DIDR2, pin - 8); }while(0)
   #else
@@ -1023,6 +1024,7 @@ void Temperature::init() {
   #ifdef DIDR2
     DIDR2 = 0;
   #endif
+
   #if HAS_TEMP_0
     ANALOG_SELECT(TEMP_0_PIN);
   #endif
@@ -1041,6 +1043,7 @@ void Temperature::init() {
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     ANALOG_SELECT(FILWIDTH_PIN);
   #endif
+#endif
 
   #if HAS_AUTO_FAN_0
     #if E0_AUTO_FAN_PIN == FAN1_PIN
@@ -1083,6 +1086,12 @@ void Temperature::init() {
     #endif
   #endif
 
+#ifdef ESP8266
+  // Interleave temperature interrupt with millies interrupt
+  timer0_isr_init();
+  timer0_attachInterrupt(Temperature::isr);
+  timer0_write(ESP.getCycleCount() + 80000);
+#else
   // Use timer0 for temperature measurement
   // Interleave temperature interrupt with millies interrupt
   OCR0B = 128;
@@ -1090,6 +1099,7 @@ void Temperature::init() {
 
   // Wait for temperature measurement to settle
   delay(250);
+#endif
 
   #define TEMP_MIN_ROUTINE(NR) \
     minttemp[NR] = HEATER_ ## NR ## _MINTEMP; \
@@ -1474,6 +1484,7 @@ void Temperature::set_current_temp_raw() {
   }
 #endif // PINS_DEBUGGING
 
+#ifndef ESP8266
 /**
  * Timer 0 is shared with millies so don't change the prescaler.
  *
@@ -1487,6 +1498,7 @@ void Temperature::set_current_temp_raw() {
  *  - Step the babysteps value for each axis towards 0
  */
 ISR(TIMER0_COMPB_vect) { Temperature::isr(); }
+#endif
 
 void Temperature::isr() {
 
@@ -1734,12 +1746,16 @@ void Temperature::isr() {
 
   #endif // SLOW_PWM_HEATERS
 
+#ifdef ESP8266
+  #define START_ADC(pin) static uint16_t ADC = analogRead(pin);
+#else
   #define SET_ADMUX_ADCSRA(pin) ADMUX = _BV(REFS0) | (pin & 0x07); SBI(ADCSRA, ADSC)
   #ifdef MUX5
     #define START_ADC(pin) if (pin > 7) ADCSRB = _BV(MUX5); else ADCSRB = 0; SET_ADMUX_ADCSRA(pin)
   #else
     #define START_ADC(pin) ADCSRB = 0; SET_ADMUX_ADCSRA(pin)
   #endif
+#endif
 
   // Prepare or measure a sensor, each one every 12th frame
   switch (temp_state) {
@@ -1940,4 +1956,9 @@ void Temperature::isr() {
       if (!endstop_monitor_count) endstop_monitor();  // report changes in endstop status
     }
   #endif
+
+#ifdef ESP8266
+  // Interleave temperature interrupt with millies interrupt
+  timer0_write(ESP.getCycleCount() + 80000);
+#endif
 }

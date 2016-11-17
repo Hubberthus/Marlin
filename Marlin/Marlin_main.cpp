@@ -9874,11 +9874,13 @@ void stop() {
  */
 void setup() {
 
+#ifndef ESP8266
   #ifdef DISABLE_JTAG
     // Disable JTAG on AT90USB chips to free up pins for IO
     MCUCR = 0x80;
     MCUCR = 0x80;
   #endif
+#endif
 
   #if ENABLED(FILAMENT_RUNOUT_SENSOR)
     setup_filrunoutpin();
@@ -9895,6 +9897,10 @@ void setup() {
   MYSERIAL.begin(BAUDRATE);
   SERIAL_PROTOCOLLNPGM("start");
   SERIAL_ECHO_START;
+
+#ifdef ESP8266
+  #define MCUSR 0
+#endif
 
   // Check startup - does nothing if bootloader sets MCUSR to 0
   byte mcu = MCUSR;

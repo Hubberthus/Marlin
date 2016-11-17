@@ -244,8 +244,13 @@ volatile long Stepper::endstops_trigsteps[XYZ];
 
 // Some useful constants
 
+#ifdef ESP8266
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()  do { timer1_enable(TIM_DIV16, TIM_LEVEL, TIM_LOOP); } while(0)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT() do { timer1_disable(); } while(0)
+#else
 #define ENABLE_STEPPER_DRIVER_INTERRUPT()  SBI(TIMSK1, OCIE1A)
 #define DISABLE_STEPPER_DRIVER_INTERRUPT() CBI(TIMSK1, OCIE1A)
+#endif
 
 /**
  *         __________________________
@@ -310,6 +315,7 @@ void Stepper::set_directions() {
   #endif // !ADVANCE && !LIN_ADVANCE
 }
 
+#ifndef ESP8266
 /**
  * Stepper Driver Interrupt
  *
@@ -325,6 +331,7 @@ void Stepper::set_directions() {
  *  4000   500  Hz - init rate
  */
 ISR(TIMER1_COMPA_vect) { Stepper::isr(); }
+#endif
 
 void Stepper::isr() {
   if (cleaning_buffer_counter) {
@@ -334,7 +341,12 @@ void Stepper::isr() {
       if ((cleaning_buffer_counter == 1) && (SD_FINISHED_STEPPERRELEASE)) enqueue_and_echo_commands_P(PSTR(SD_FINISHED_RELEASECOMMAND));
     #endif
     cleaning_buffer_counter--;
-    OCR1A = 200; // Run at max speed - 10 KHz
+    // Run at max speed - 10 KHz
+#ifdef ESP8266
+    timer1_write(500);
+#else
+    OCR1A = 200;
+#endif
     return;
   }
 
@@ -368,7 +380,12 @@ void Stepper::isr() {
       // #endif
     }
     else {
-      OCR1A = 2000; // Run at slow speed - 1 KHz
+    	// Run at slow speed - 1 KHz
+#ifdef ESP8266
+        timer1_write(5000);
+#else
+        OCR1A = 2000;
+#endif
       return;
     }
   }
@@ -562,7 +579,11 @@ void Stepper::isr() {
 
     // step_rate to timer interval
     timer = calc_timer(acc_step_rate);
+#ifdef ESP8266
+    timer1_write(timer);
+#else
     OCR1A = timer;
+#endif
     acceleration_time += timer;
 
     #if ENABLED(LIN_ADVANCE)
@@ -614,7 +635,11 @@ void Stepper::isr() {
 
     // step_rate to timer interval
     timer = calc_timer(step_rate);
+#ifdef ESP8266
+    timer1_write(timer);
+#else
     OCR1A = timer;
+#endif
     deceleration_time += timer;
 
     #if ENABLED(LIN_ADVANCE)
@@ -663,12 +688,20 @@ void Stepper::isr() {
 
     #endif
 
+#ifdef ESP8266
+    timer1_write(OCR1A_nominal);
+#else
     OCR1A = OCR1A_nominal;
+#endif
     // ensure we're running at the correct step rate, even if we just came off an acceleration
     step_loops = step_loops_nominal;
   }
 
+#ifdef ESP8266
+  NOMORE(T1L, T1V - 40);
+#else
   NOLESS(OCR1A, TCNT1 + 16);
+#endif
 
   // If current block is finished, reset pointer
   if (all_steps_done) {
@@ -901,6 +934,12 @@ void Stepper::init() {
     E_AXIS_INIT(3);
   #endif
 
+#ifdef ESP8266
+  timer1_isr_init();
+  timer1_attachInterrupt(Stepper::isr);
+  ENABLE_STEPPER_DRIVER_INTERRUPT();
+  timer1_write(0xA000);
+#else
   // waveform generation = 0100 = CTC
   CBI(TCCR1B, WGM13);
   SBI(TCCR1B, WGM12);
@@ -922,6 +961,7 @@ void Stepper::init() {
   OCR1A = 0x4000;
   TCNT1 = 0;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
+#endif
 
   #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
 

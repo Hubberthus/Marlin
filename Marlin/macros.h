@@ -39,6 +39,7 @@
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
   #define CRITICAL_SECTION_END    SREG = _sreg;
 #endif
+#endif
 
 // Clock speed factor
 #define CYCLES_PER_MICROSECOND (F_CPU / 1000000UL) // 16 or 20
