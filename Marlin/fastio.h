@@ -87,7 +87,7 @@
 #include "gpio_expansion.h"
 
 /// Read a pin
-#define _READ(IO) ((bool)(digitalRead(IO))))
+#define _READ(IO) ((bool)(digitalRead(IO)))
 
 /// write to a pin
 #define _WRITE(IO, v)  do { digitalWrite(IO, v); } while (0)

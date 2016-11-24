@@ -47,6 +47,8 @@
 #include "duration_t.h"
 #include "types.h"
 
+#include "webpage.h"
+
 #if HAS_ABL
   #include "vector_3.h"
   #if ENABLED(AUTO_BED_LEVELING_LINEAR)
@@ -233,6 +235,7 @@
  * M405 - Enable Filament Sensor flow control. "M405 D<delay_cm>". (Requires FILAMENT_WIDTH_SENSOR)
  * M406 - Disable Filament Sensor flow control. (Requires FILAMENT_WIDTH_SENSOR)
  * M407 - Display measured filament diameter in millimeters. (Requires FILAMENT_WIDTH_SENSOR)
+ * M408 - Report JSON-style response
  * M410 - Quickstop. Abort all planned moves.
  * M420 - Enable/Disable Leveling (with current values) S1=enable S0=disable (Requires MESH_BED_LEVELING or ABL)
  * M421 - Set a single Z coordinate in the Mesh Leveling grid. X<units> Y<units> Z<units> (Requires MESH_BED_LEVELING)
@@ -1196,6 +1199,10 @@ inline bool code_has_value() {
   if (c == '-' || c == '+') c = seen_pointer[++i];
   if (c == '.') c = seen_pointer[++i];
   return NUMERIC(c);
+}
+
+inline bool code_is_float() {
+  return strchr(seen_pointer, '.');
 }
 
 inline float code_value_float() {
@@ -5197,10 +5204,11 @@ inline void gcode_M105() {
    * M106: Set Fan Speed
    *
    *  S<int>   Speed between 0-255
+   *  S<float> Speed between 0.0-1.0
    *  P<index> Fan index, if more than one fan
    */
   inline void gcode_M106() {
-    uint16_t s = code_seen('S') ? code_value_ushort() : 255,
+    uint16_t s = code_seen('S') ? (code_is_float() ? (uint16_t)(code_value_float() * 255) : code_value_ushort()) : 255,
              p = code_seen('P') ? code_value_ushort() : 0;
     NOMORE(s, 255);
     if (p < FAN_COUNT) fanSpeeds[p] = s;
@@ -6717,6 +6725,285 @@ inline void gcode_M400() { stepper.synchronize(); }
   }
 
 #endif // FILAMENT_WIDTH_SENSOR
+
+String getStatus(uint8_t type) {
+  String retVal = "{";
+
+  switch(type) {
+  case 2:
+
+  	  retVal += "\"coldExtrudeTemp\": ";
+  	  retVal += String((float)EXTRUDE_MINTEMP, 1);
+
+  	  retVal += ",\"coldRetractTemp\": ";
+  	  retVal += String((float)EXTRUDE_MINTEMP, 1);
+
+  	  retVal += ",\"geometry\": \"";
+  #if defined DELTA
+  	  retVal += "delta";
+  #elif defined SCARA
+  	  retVal += "scara";
+  #elif defined COREXY
+  	  retVal += "coreXY";
+  #elif defined COREXZ
+  	  retVal += "coreXZ";
+  #elif defined COREYZ
+  	  retVal += "coreYZ";
+  #else
+  	  retVal += "cartesian";
+  #endif
+
+  	  retVal += "\",\"name\": \"";
+  #ifdef CUSTOM_MACHINE_NAME
+  	  retVal += CUSTOM_MACHINE_NAME;
+  #else
+  	  retVal += MACHINE_NAME;
+  #endif
+
+  	  retVal += "\",\"tools\": [";
+  	  for (int i = 0; i < EXTRUDERS; i++) {
+  		  if (i > 0) retVal += ",";
+  		  retVal += "{\"number\": ";
+  		  retVal += (i + 1);
+  		  retVal += ",\"heaters\": [";
+  		  retVal += (i + 1);
+  		  retVal += "],\"drives\": [";
+  		  retVal += i;
+  		  retVal += "]}";
+  	  }
+  	  retVal += "],";
+  case 1:
+	  retVal += "\"status\": ";
+	  switch(busy_state) {
+	  	case NOT_BUSY:
+	  		retVal += "\"I\"";   // IDLING
+	  		break;
+	  	case IN_HANDLER:
+	  	case IN_PROCESS:
+#ifdef SDSUPPORT
+	  		if (IsRunning()) retVal += "\"P\"";
+	  		else
+#endif
+	  		retVal += "\"B\"";   // BUSY
+	  		break;
+	  	case PAUSED_FOR_USER:
+	  	case PAUSED_FOR_INPUT:
+	  		retVal += "\"S\"";   // STOPPED
+	  		break;
+	  	default:
+	  		retVal += "\"H\"";   // HALTED
+	  	}
+
+	  retVal += ",\"coords\": {\"axesHomed\": [";
+	  retVal += (axis_homed[X_AXIS] ? "1" : "0");
+	  retVal += ",";
+	  retVal += (axis_homed[Y_AXIS] ? "1" : "0");
+	  retVal += ",";
+	  retVal += (axis_homed[Z_AXIS] ? "1" : "0");
+
+	  retVal += "],\"extr\": [";
+	  retVal += String(current_position[E_AXIS], 1);
+	  for (int i = 1; i < EXTRUDERS; i++) {
+		  retVal += ",";
+		  retVal += String(current_position[E_AXIS], 1);
+	  }
+
+	  retVal += "],\"xyz\": [";
+	  retVal += String(current_position[X_AXIS], 1);
+	  retVal += ",";
+	  retVal += String(current_position[Y_AXIS], 1);
+	  retVal += ",";
+	  retVal += String(current_position[Z_AXIS], 1);
+
+	  retVal += "]},\"currentTool\": ";
+	  retVal += (active_extruder + 1);
+
+#if ENABLED(ULTRA_LCD)
+	  retVal += ",\"output\": {\"message\": \"";
+	  retVal += card.getStatus();
+	  retVal += "\"}";
+#endif
+
+	  retVal += ",\"params\": {\"atxPower\": ";
+	  retVal += (POWER_SUPPLY > 0 ? "1" : "0");
+	  retVal += ",\"fanPercent\": [";
+	  for (int i = 0; i < FAN_COUNT; i++) {
+		  if (i > 0) retVal += ",";
+	  	  retVal += String((float)fanSpeeds[i]/255*100, 1);
+	  }
+
+	  retVal += "],\"speedFactor\": ";
+	  retVal += String((float)feedrate_percentage, 1);
+
+	  retVal += ",\"extrFactors\": [";
+	  for (int i = 0; i < EXTRUDERS; i++) {
+		  if (i > 0) retVal += ",";
+	  	  retVal += String((float)flow_percentage[i], 1);
+	  }
+
+	  retVal += "]},\"seq\": ";
+	  retVal += gcode_LastN;
+
+	  retVal += ",\"sensors\": {\"probeValue\": ";
+#if HAS_BED_PROBE
+	  retVal += "-1";
+#else
+	  retVal += "-1";
+#endif
+
+	  retVal += ",\"fanRPM\": ";
+	  retVal += "-1";
+
+	  retVal += "},\"temps\": {";
+#if HAS_TEMP_BED
+	  retVal += "\"bed\": {\"current\": ";
+	  retVal += String(thermalManager.degBed(), 1);
+	  retVal += ",\"active\": ";
+	  retVal += String(thermalManager.degTargetBed(), 1);
+	  retVal += ",\"state\": ";
+	  retVal += (thermalManager.isHeatingBed() ?
+			     (thermalManager.degTargetBed() > thermalManager.degBed() ? "2" : "1") : "0");
+	  retVal += "},";
+#endif
+
+	  retVal += "\"heads\": {\"current\": [";
+	  for (int i = 0; i < EXTRUDERS; i++) {
+		  if (i > 0) retVal += ",";
+	  	  retVal += String(thermalManager.degHotend(i), 1);
+	  }
+	  retVal += "],\"active\": [";
+	  for (int i = 0; i < EXTRUDERS; i++) {
+		  if (i > 0) retVal += ",";
+		  retVal += String(thermalManager.degTargetHotend(i), 1);
+	  }
+	  retVal += "],\"standby\": [";
+	  for (int i = 0; i < EXTRUDERS; i++) {
+		  if (i > 0) retVal += ",";
+		  retVal += String(thermalManager.degTargetHotend(i), 1);
+	  }
+	  retVal += "],\"state\": [";
+	  for (int i = 0; i < EXTRUDERS; i++) {
+		  if (i > 0) retVal += ",";
+		  retVal += (thermalManager.isHeatingHotend(i) ?
+				     (thermalManager.degTargetHotend(i) > thermalManager.degHotend(i) ? "2" : "1") : "0");
+	  }
+
+	  retVal += "]}}}\n";
+	  break;
+  case 3:
+#ifdef SDSUPPORT
+	  retVal += "\"currentLayer\": ";
+	  retVal += "0";
+
+	  retVal += ",\"currentLayerTime\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += "\"extrRaw\": [";
+	  for (int i = 0; i < EXTRUDERS; i++) {
+		  if (i > 0) retVal += ",";
+		  retVal += "100.0";
+	  }
+
+	  retVal += "],\"fractionPrinted\": ";
+	  retVal += String((float)card.getFractionPrinted(), 1);
+
+	  retVal += ",\"firstLayerDuration\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += ",\"firstLayerHeight\": ";
+	  retVal += "0.0";
+
+	  retVal += ",\"printDuration\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += ",\"warmUpDuration\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += ",\"timesLeft\": {\"file\": ";
+	  retVal += "1000000000.0";
+
+	  retVal += ",\"filament\": ";
+	  retVal += "1000000000.0";
+
+	  retVal += ",\"layer\": ";
+	  retVal += "1000000000.0";
+
+	  retVal += "}}\n";
+
+#else
+	  retVal = "{}\n";
+#endif
+	  break;
+  default:
+
+	  retVal += "\"axisMins\": [";
+	  retVal += String((float)X_MIN, 1);
+	  retVal += ",";
+	  retVal += String((float)Y_MIN, 1);
+	  retVal += ",";
+	  retVal += String((float)Z_MIN, 1);
+
+	  retVal += "],\"axisMaxes\": [";
+	  retVal += String((float)X_MAX, 1);
+	  retVal += ",";
+	  retVal += String((float)Y_MAX, 1);
+	  retVal += ",";
+	  retVal += String((float)Z_MAX, 1);
+
+	  retVal += "],\"accelerations\": [";
+	  retVal += String((float)planner.max_acceleration_mm_per_s2[X_AXIS], 1);
+	  retVal += ",";
+	  retVal += String((float)planner.max_acceleration_mm_per_s2[Y_AXIS], 1);
+	  retVal += ",";
+	  retVal += String((float)planner.max_acceleration_mm_per_s2[Z_AXIS], 1);
+
+	  retVal += "],\"firmwareElectronics\": \"";
+	  retVal += BOARD_NAME;
+
+	  retVal += "\",\"firmwareName\": \"";
+	  retVal += "Marlin";
+
+	  retVal += "\",\"firmwareVersion\": \"";
+	  retVal += SHORT_BUILD_VERSION;
+
+	  retVal += "\",\"firmwareDate\": \"";
+	  retVal += STRING_DISTRIBUTION_DATE;
+	  retVal += "\"";
+
+#if ENABLED(HOST_KEEPALIVE_FEATURE)
+	  retVal += ",\"idleTimeout\": ";
+	  retVal += String((float)host_keepalive_interval, 1);
+#endif
+
+	  retVal += ",\"minFeedrates\": [";
+	  for (int i = 0; i < NUM_AXIS; i++) {
+		  if (i > 0) retVal += ",";
+		  retVal += planner.min_feedrate_mm_s;
+	  }
+
+	  retVal += "],\"maxFeedrates\": [";
+	  for (int i = 0; i < NUM_AXIS; i++) {
+		  if (i > 0) retVal += ",";
+		  retVal += planner.max_feedrate_mm_s[i];
+	  }
+
+	  retVal += "],\"configFile\": \"\"}\n";
+  }
+
+  return retVal;
+}
+
+  /**
+   * M408: Report JSON-style response
+   */
+inline void gcode_M408() {
+  bool firstOccurrence;
+  uint8_t type = 0;
+
+  if (code_seen('S')) type = code_value_byte();
+
+  SERIAL_PROTOCOLPGM(getStatus(type).c_str());
+}
 
 void quickstop_stepper() {
   stepper.quick_stop();
@@ -8270,6 +8557,10 @@ void process_next_command() {
           break;
       #endif // ENABLED(FILAMENT_WIDTH_SENSOR)
 
+        case 408:   // M408: Report JSON-style response
+          gcode_M408();
+          break;
+
       #if PLANNER_LEVELING
         case 420: // M420: Enable/Disable Bed Leveling
           gcode_M420();
@@ -9792,7 +10083,13 @@ void idle(
     bool no_stepper_sleep/*=false*/
   #endif
 ) {
+#ifdef ESP8266
+  thermalManager.isr();
+#endif
+
   lcd_update();
+
+  webpage_update();
 
   host_keepalive();
 
@@ -9912,6 +10209,8 @@ void setup() {
   byte MCUSR = 0;
 
   EEPROM.begin(256);
+
+  setup_webpage();
 #endif
 
   // Check startup - does nothing if bootloader sets MCUSR to 0

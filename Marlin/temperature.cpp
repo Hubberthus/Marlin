@@ -1086,12 +1086,7 @@ void Temperature::init() {
     #endif
   #endif
 
-#ifdef ESP8266
-  // Interleave temperature interrupt with millies interrupt
-  timer0_isr_init();
-  timer0_attachInterrupt(Temperature::isr);
-  timer0_write(ESP.getCycleCount() + 80000);
-#else
+#ifndef ESP8266
   // Use timer0 for temperature measurement
   // Interleave temperature interrupt with millies interrupt
   OCR0B = 128;
@@ -1501,6 +1496,12 @@ ISR(TIMER0_COMPB_vect) { Temperature::isr(); }
 #endif
 
 void Temperature::isr() {
+
+  static uint32_t lastMillis = millis();
+  if ((millis() - lastMillis) < 2) {
+	  return;
+  }
+  lastMillis = millis();
 
   static uint8_t temp_count = 0;
   static TempState temp_state = StartupDelay;
@@ -1957,9 +1958,4 @@ void Temperature::isr() {
       if (!endstop_monitor_count) endstop_monitor();  // report changes in endstop status
     }
   #endif
-
-#ifdef ESP8266
-  // Interleave temperature interrupt with millies interrupt
-  timer0_write(ESP.getCycleCount() + 80000);
-#endif
 }
