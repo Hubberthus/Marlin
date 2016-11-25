@@ -317,6 +317,10 @@ void Stepper::set_directions() {
       count_direction[E_AXIS] = 1;
     }
   #endif // !ADVANCE && !LIN_ADVANCE
+
+#ifdef ESP8266
+    COMMIT_CHANGES();
+#endif
 }
 
 #ifndef ESP8266
@@ -512,6 +516,10 @@ void Stepper::isr() {
       #endif
     #endif // !ADVANCE && !LIN_ADVANCE
 
+#ifdef ESP8266
+    COMMIT_CHANGES();
+#endif
+
     // For a minimum pulse time wait before stopping pulses
     #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
       while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) { /* nada */ }
@@ -544,6 +552,10 @@ void Stepper::isr() {
         PULSE_STOP(E);
       #endif
     #endif // !ADVANCE && !LIN_ADVANCE
+
+#ifdef ESP8266
+    COMMIT_CHANGES();
+#endif
 
     if (++step_events_completed >= current_block->step_event_count) {
       all_steps_done = true;
@@ -702,7 +714,7 @@ void Stepper::isr() {
   }
 
 #ifdef ESP8266
-  NOMORE(T1L, T1V - 40);
+  //NOMORE(T1L, T1V - 40);
 #else
   NOLESS(OCR1A, TCNT1 + 16);
 #endif

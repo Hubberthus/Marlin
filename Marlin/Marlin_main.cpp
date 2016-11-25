@@ -6729,8 +6729,9 @@ inline void gcode_M400() { stepper.synchronize(); }
 String getStatus(uint8_t type) {
   String retVal = "{";
 
-  switch(type) {
-  case 2:
+  if (type <= 3) {
+
+	if (type == 2) {
 
   	  retVal += "\"coldExtrudeTemp\": ";
   	  retVal += String((float)EXTRUDE_MINTEMP, 1);
@@ -6772,7 +6773,52 @@ String getStatus(uint8_t type) {
   		  retVal += "]}";
   	  }
   	  retVal += "],";
-  case 1:
+	}
+
+    if (type == 3) {
+#ifdef SDSUPPORT
+	  retVal += "\"currentLayer\": ";
+	  retVal += "0";
+
+	  retVal += ",\"currentLayerTime\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += "\"extrRaw\": [";
+	  for (int i = 0; i < EXTRUDERS; i++) {
+		  if (i > 0) retVal += ",";
+		  retVal += "100.0";
+	  }
+
+	  retVal += "],\"fractionPrinted\": ";
+	  retVal += String((float)card.getFractionPrinted(), 1);
+
+	  retVal += ",\"firstLayerDuration\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += ",\"firstLayerHeight\": ";
+	  retVal += "0.0";
+
+	  retVal += ",\"printDuration\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += ",\"warmUpDuration\": ";
+	  retVal += String((float)print_job_timer.duration(), 1);
+
+	  retVal += ",\"timesLeft\": {\"file\": ";
+	  retVal += "1000000000.0";
+
+	  retVal += ",\"filament\": ";
+	  retVal += "1000000000.0";
+
+	  retVal += ",\"layer\": ";
+	  retVal += "1000000000.0";
+
+	  retVal += "}";
+#endif
+    }
+
+    // type == 1
+
 	  retVal += "\"status\": ";
 	  switch(busy_state) {
 	  	case NOT_BUSY:
@@ -6889,52 +6935,8 @@ String getStatus(uint8_t type) {
 	  }
 
 	  retVal += "]}}}\n";
-	  break;
-  case 3:
-#ifdef SDSUPPORT
-	  retVal += "\"currentLayer\": ";
-	  retVal += "0";
 
-	  retVal += ",\"currentLayerTime\": ";
-	  retVal += String((float)print_job_timer.duration(), 1);
-
-	  retVal += "\"extrRaw\": [";
-	  for (int i = 0; i < EXTRUDERS; i++) {
-		  if (i > 0) retVal += ",";
-		  retVal += "100.0";
-	  }
-
-	  retVal += "],\"fractionPrinted\": ";
-	  retVal += String((float)card.getFractionPrinted(), 1);
-
-	  retVal += ",\"firstLayerDuration\": ";
-	  retVal += String((float)print_job_timer.duration(), 1);
-
-	  retVal += ",\"firstLayerHeight\": ";
-	  retVal += "0.0";
-
-	  retVal += ",\"printDuration\": ";
-	  retVal += String((float)print_job_timer.duration(), 1);
-
-	  retVal += ",\"warmUpDuration\": ";
-	  retVal += String((float)print_job_timer.duration(), 1);
-
-	  retVal += ",\"timesLeft\": {\"file\": ";
-	  retVal += "1000000000.0";
-
-	  retVal += ",\"filament\": ";
-	  retVal += "1000000000.0";
-
-	  retVal += ",\"layer\": ";
-	  retVal += "1000000000.0";
-
-	  retVal += "}}\n";
-
-#else
-	  retVal = "{}\n";
-#endif
-	  break;
-  default:
+  } else {
 
 	  retVal += "\"axisMins\": [";
 	  retVal += String((float)X_MIN, 1);

@@ -285,6 +285,8 @@ class Stepper {
     static FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
       unsigned short timer;
 
+      step_rate /= 2;
+
       NOMORE(step_rate, MAX_STEP_FREQUENCY);
 
       if (step_rate > 20000) { // If steprate > 20kHz >> step 4 times
@@ -298,7 +300,6 @@ class Stepper {
       else {
         step_loops = 1;
       }
-
       NOLESS(step_rate, F_CPU / 500000);
       step_rate -= F_CPU / 500000; // Correct for minimal speed
       if (step_rate >= (8 * 256)) { // higher step rate

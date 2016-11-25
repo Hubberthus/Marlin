@@ -86,24 +86,47 @@
 
 #include "gpio_expansion.h"
 
+/**
+  utility functions
+*/
+
+#ifndef MASK
+  #define MASK(PIN)  (1 << (PIN - NUM_INTERNAL_PINS))
+#endif
+
+/// Read an internal pin
+#define _READ_INT(IO) ((bool)(digitalRead(IO)))
+
+/// Read an external pin
+#define _READ_EXT(IO) ((bool)(PORT_VAL & MASK(IO)))
+
 /// Read a pin
-#define _READ(IO) ((bool)(digitalRead(IO)))
+#define _READ(IO) ((IO < NUM_INTERNAL_PINS ? _READ_INT(IO) : _READ_EXT(IO)))
+
+/// write to an internal pin
+#define _WRITE_INT(IO, v)  do { digitalWrite(IO, v); } while (0)
+
+/// write to an external pin
+#define _WRITE_EXT(IO, v)  do { if (_GET_INPUT(IO)) { digitalWrite(IO, v); } else { if (v) {PORT_VAL |= MASK(IO); } else {PORT_VAL &= ~MASK(IO); } } } while (0)
 
 /// write to a pin
-#define _WRITE(IO, v)  do { digitalWrite(IO, v); } while (0)
+#define _WRITE(IO, v)  do { if (IO < NUM_INTERNAL_PINS) { _WRITE_INT(IO, v); } else { _WRITE_EXT(IO, v); } } while (0)
 
 /// toggle a pin
-#define _TOGGLE(IO)  do { digitalWrite(IO, ! digitalRead(IO)); } while (0)
+#define _TOGGLE(IO)  do { _WRITE(IO, ! _READ(IO)); } while (0)
+
+/// Commit changes, write out all extrenal pins in a batch
+#define _COMMIT_CHANGES()  do { gpio_expansion_flush(); } while (0)
 
 /// set pin as input
-#define _SET_INPUT(IO) do { pinMode(IO, INPUT); } while (0)
+#define _SET_INPUT(IO) do { pinMode(IO, INPUT); attachInterrupt(IO, NULL, CHANGE); } while (0)
 /// set pin as output
-#define _SET_OUTPUT(IO) do { pinMode(IO, OUTPUT); } while (0)
+#define _SET_OUTPUT(IO) do { pinMode(IO, OUTPUT); detachInterrupt(IO); } while (0)
 
 /// check if pin is an input
-#define _GET_INPUT(IO)  ((PORT_DIR[0] & (1 << IO)) != 0)
+#define _GET_INPUT(IO)  ((PORT_DIR & MASK(IO)) != 0)
 /// check if pin is an output
-#define _GET_OUTPUT(IO)  ((PORT_DIR[0] & (1 << IO)) == 0)
+#define _GET_OUTPUT(IO)  ((PORT_DIR & MASK(IO)) == 0)
 
 /// check if pin is an timer
 #define _GET_TIMER(IO)  (NULL)
@@ -119,6 +142,9 @@
 
 /// toggle a pin wrapper
 #define TOGGLE(IO)  _TOGGLE(IO)
+
+/// Commit changes, write out all extrenal pins in a batch
+#define COMMIT_CHANGES()  _COMMIT_CHANGES()
 
 /// set pin as input wrapper
 #define SET_INPUT(IO)  _SET_INPUT(IO)
