@@ -43,8 +43,8 @@
 #define X_MAX_PIN          D19
 #define Y_MIN_PIN          D20
 #define Y_MAX_PIN          D21
-#define Z_MIN_PIN          D22
-#define Z_MAX_PIN          D23
+#define Z_MIN_PIN          -1//D22
+#define Z_MAX_PIN          -1//D23
 
 //
 // Z Probe (when not Z_MIN_PIN)
@@ -64,9 +64,9 @@
 #define Y_DIR_PIN          D9
 #define Y_ENABLE_PIN       D14
 
-#define Z_STEP_PIN         D2
-#define Z_DIR_PIN          D10
-#define Z_ENABLE_PIN       D15
+#define Z_STEP_PIN         -1//D2
+#define Z_DIR_PIN          -1//D10
+#define Z_ENABLE_PIN       -1//D15
 
 #define E0_STEP_PIN        D3
 #define E0_DIR_PIN         D11

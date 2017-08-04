@@ -155,11 +155,15 @@
   /**
    * MAX_STEP_FREQUENCY differs for TOSHIBA
    */
+#ifndef ESP8266
   #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
     #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
   #else
     #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
   #endif
+#else
+    #define MAX_STEP_FREQUENCY 10000 // Max step frequency for ESPExtra
+#endif
 
   // MS1 MS2 Stepper Driver Microstepping mode table
   #define MICROSTEP1 LOW,LOW

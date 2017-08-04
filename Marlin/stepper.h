@@ -78,7 +78,7 @@ extern Stepper stepper;
                  "r26" \
                )
 #else
-#define MultiU16X8toH16(intRes, charIn1, intIn2) { intRes = charIn1 * intIn2 >> 16; }
+#define MultiU16X8toH16(intRes, charIn1, intIn2) { intRes = (charIn1 * intIn2) >> 16; }
 #endif
 
 class Stepper {
@@ -285,9 +285,9 @@ class Stepper {
     static FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
       unsigned short timer;
 
-      step_rate /= 2;
-
       NOMORE(step_rate, MAX_STEP_FREQUENCY);
+
+      step_rate /= 2;
 
       if (step_rate > 20000) { // If steprate > 20kHz >> step 4 times
         step_rate >>= 2;
@@ -300,8 +300,14 @@ class Stepper {
       else {
         step_loops = 1;
       }
+      // Correct for minimal speed
+#ifndef ESP8266
       NOLESS(step_rate, F_CPU / 500000);
-      step_rate -= F_CPU / 500000; // Correct for minimal speed
+      step_rate -= F_CPU / 500000;
+#else
+      NOLESS(step_rate, F_CPU / 2500000);
+      step_rate -= F_CPU / 2500000;
+#endif
       if (step_rate >= (8 * 256)) { // higher step rate
         unsigned short* table_address = (unsigned short*)&speed_lookuptable_fast[(unsigned char)(step_rate >> 8)][0];
         unsigned char tmp_step_rate = (step_rate & 0x00ff);
@@ -315,8 +321,14 @@ class Stepper {
         timer = (unsigned short)pgm_read_word_near(table_address);
         timer -= (((unsigned short)pgm_read_word_near(table_address + 2) * (unsigned char)(step_rate & 0x0007)) >> 3);
       }
-      if (timer < 100) { // (20kHz - this should never happen)
+      // (20kHz - this should never happen)
+#ifndef ESP8266
+      if (timer < 100) {
         timer = 100;
+#else
+	  if (timer < 250) {
+	    timer = 250;
+#endif
         MYSERIAL.print(MSG_STEPPER_TOO_HIGH);
         MYSERIAL.println(step_rate);
       }

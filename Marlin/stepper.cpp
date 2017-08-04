@@ -243,7 +243,7 @@ volatile long Stepper::endstops_trigsteps[XYZ];
                  "r26" , "r27" \
                )
 #else
-#define MultiU24X32toH16(intRes, longIn1, longIn2) { intRes = longIn1 * longIn2 >> 24; }
+#define MultiU24X32toH16(intRes, longIn1, longIn2) { intRes = (longIn1 * longIn2) >> 24; }
 #endif
 
 // Some useful constants
@@ -486,7 +486,11 @@ void Stepper::isr() {
     // If a minimum pulse time was specified get the CPU clock
     #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
       static uint32_t pulse_start;
+#ifndef ESP8266
       pulse_start = TCNT0;
+#else
+      pulse_start = T1V;
+#endif
     #endif
 
     #if HAS_X_STEP
@@ -522,7 +526,11 @@ void Stepper::isr() {
 
     // For a minimum pulse time wait before stopping pulses
     #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
+#ifndef ESP8266
       while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) { /* nada */ }
+#else
+      while ((uint32_t)(pulse_start - T1V) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) { /* nada */ }
+#endif
     #endif
 
     #if HAS_X_STEP
@@ -714,7 +722,7 @@ void Stepper::isr() {
   }
 
 #ifdef ESP8266
-  //NOMORE(T1L, T1V - 40);
+  NOMORE(T1L, T1V - 40);
 #else
   NOLESS(OCR1A, TCNT1 + 16);
 #endif

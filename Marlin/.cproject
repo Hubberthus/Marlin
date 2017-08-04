@@ -27,6 +27,11 @@
 									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/packages/esp8266/hardware/esp8266/2.3.0/tools/sdk/include"/>
 									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/2.3.0/libraries/EEPROM"/>
 									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/2.3.0/libraries/SPI"/>
+									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/2.3.0/libraries/ESP8266WiFi/src"/>
+									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/2.3.0/libraries/ESP8266WebServer/src"/>
+									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/2.3.0/libraries/DNSServer/src"/>
+									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/2.3.0/libraries/ESP8266mDNS"/>
+									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/2.3.0/libraries/ESP8266SSDP"/>
 									<listOptionValue builtIn="false" value="/home/enorfek/Arduino/libraries/U8glib/src"/>
 									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/packages/esp8266/hardware/esp8266/2.3.0/variants/espextra"/>
 									<listOptionValue builtIn="false" value="/home/enorfek/.arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266"/>
